@@ -6,7 +6,7 @@ import os
 import tempfile
 import numpy as np
 import xarray as xr
-from typing import Dict, Tuple, Any
+from typing import Any, Hashable
 import logging
 
 logger = logging.getLogger(__name__)
@@ -14,8 +14,8 @@ logger = logging.getLogger(__name__)
 
 def create_conversion_rules(
     dataset: xr.Dataset,
-    compression_params: Dict
-) -> Dict[str, Tuple[Tuple[str, ...], Tuple[str, ...], int, Dict, int]]:
+    compression_params: dict
+) -> dict[Hashable, tuple[tuple[Hashable, ...], tuple[str, ...], int, dict, int]]:
   """
   Create conversion rules for xarrayvideo based on dataset structure.
 
@@ -23,12 +23,12 @@ def create_conversion_rules(
   ----------
   dataset : xr.Dataset
       Dataset to create rules for
-  compression_params : Dict
+  compression_params : dict
       Compression parameters to use
 
   Returns
   -------
-  Dict
+  dict
       Conversion rules in xarrayvideo format
   """
   conversion_rules = {}
@@ -156,7 +156,7 @@ def validate_datasets_compatible(datasets: list) -> bool:
   return True
 
 
-def get_dataset_info(dataset: xr.Dataset) -> Dict[str, Any]:
+def get_dataset_info(dataset: xr.Dataset) -> dict[str, Any]:
   """
   Get summary information about a dataset.
 
@@ -167,7 +167,7 @@ def get_dataset_info(dataset: xr.Dataset) -> Dict[str, Any]:
 
   Returns
   -------
-  Dict
+  dict
       Dictionary with dataset information
   """
   info = {

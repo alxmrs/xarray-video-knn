@@ -126,7 +126,7 @@ class TestXArrayVideoKNNClassifier:
     with pytest.raises(ValueError, match="Classifier must be fitted"):
       classifier.predict(datasets[:1])
 
-  @patch('xarray_video_knn.classifier.estimate_compression_size')
+  @patch('xarray_video_knn.utils.estimate_compression_size')
   def test_predict_single(self, mock_compression, sample_datasets):
     """Test single prediction."""
     datasets, labels = sample_datasets

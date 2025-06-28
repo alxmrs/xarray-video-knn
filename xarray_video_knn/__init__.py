@@ -10,8 +10,8 @@ from .classifier import XArrayVideoKNNClassifier
 from .utils import create_conversion_rules, estimate_compression_size
 
 __version__ = "0.1.0"
-__author__ = "Your Name"
-__email__ = "your.email@example.com"
+__author__ = "Alex Merose"
+__email__ = "al@merose.com"
 
 __all__ = [
     "XArrayVideoKNNClassifier",

@@ -2,28 +2,18 @@
 Main classifier module for XArray Video KNN.
 """
 
+import logging
 import os
 import tempfile
+from collections import Counter
+from typing import Any, Optional
+
 import numpy as np
 import xarray as xr
-from typing import List, Any, Dict, Optional, Union
-from collections import Counter
-import logging
+from xarrayvideo import xarray2video
+from .utils import create_conversion_rules
 
-from .utils import create_conversion_rules, estimate_compression_size
-
-# Set up logging
 logger = logging.getLogger(__name__)
-
-# Check for xarrayvideo availability
-try:
-  from xarrayvideo import xarray2video, video2xarray
-
-  XARRAYVIDEO_AVAILABLE = True
-  logger.info("xarrayvideo library loaded successfully")
-except ImportError:
-  XARRAYVIDEO_AVAILABLE = False
-  logger.warning("xarrayvideo not available, using fallback compression")
 
 
 class XArrayVideoKNNClassifier:
@@ -51,9 +41,9 @@ class XArrayVideoKNNClassifier:
 
   Attributes
   ----------
-  training_data_ : List[xr.Dataset]
+  training_data_ : list[xr.Dataset]
       Training datasets after fitting.
-  training_labels_ : List[Any]
+  training_labels_ : list[Any]
       Training labels after fitting.
   is_fitted_ : bool
       Whether the classifier has been fitted.
@@ -62,7 +52,7 @@ class XArrayVideoKNNClassifier:
   def __init__(
       self,
       k: int = 1,
-      compression_params: Optional[Dict] = None,
+      compression_params: Optional[dict] = None,
       temp_dir: Optional[str] = None,
       use_lossless: bool = True,
       cleanup_temp_files: bool = True
@@ -88,9 +78,6 @@ class XArrayVideoKNNClassifier:
     self.training_data_ = []
     self.training_labels_ = []
     self.is_fitted_ = False
-
-    logger.info(f"Initialized XArrayVideoKNNClassifier with k={k}, "
-                f"lossless={use_lossless}")
 
   def _validate_dataset(self, dataset: xr.Dataset) -> None:
     """Validate that a dataset is suitable for compression."""
@@ -122,10 +109,6 @@ class XArrayVideoKNNClassifier:
     """
     self._validate_dataset(dataset)
 
-    if not XARRAYVIDEO_AVAILABLE:
-      logger.debug("Using fallback compression")
-      return estimate_compression_size(dataset, self.temp_dir)
-
     # Create conversion rules for all data variables
     conversion_rules = create_conversion_rules(dataset, self.compression_params)
 
@@ -133,42 +116,37 @@ class XArrayVideoKNNClassifier:
     array_id = f"temp_{abs(hash(str(dataset)))}"
     output_path = self.temp_dir
 
-    try:
-      # Compress using xarrayvideo
-      result = xarray2video(
-        dataset,
-        array_id,
-        conversion_rules,
-        output_path=output_path,
-        compute_stats=True,
-        loglevel='error'  # Reduce verbosity
-      )
+    # Compress using xarrayvideo
+    result = xarray2video(
+      dataset,
+      array_id,
+      conversion_rules,
+      output_path=output_path,
+      compute_stats=True,
+      loglevel='error'  # Reduce verbosity
+    )
 
-      # Extract compression size
-      if isinstance(result, dict) and 'compression_stats' in result:
-        size = result['compression_stats'].get('total_compressed_size', 0)
-        logger.debug(f"Compressed dataset to {size} bytes")
-        return size
-      else:
-        # Fallback: estimate size from files
-        import glob
-        files = glob.glob(os.path.join(output_path, f"*{array_id}*"))
-        total_size = sum(os.path.getsize(f) for f in files if os.path.exists(f))
+    # Extract compression size
+    if isinstance(result, dict) and 'compression_stats' in result:
+      size = result['compression_stats'].get('total_compressed_size', 0)
+      logger.debug(f"Compressed dataset to {size} bytes")
+      return size
+    else:
+      # Fallback: estimate size from files
+      import glob
+      files = glob.glob(os.path.join(output_path, f"*{array_id}*"))
+      total_size = sum(os.path.getsize(f) for f in files if os.path.exists(f))
 
-        # Clean up if requested
-        if self.cleanup_temp_files:
-          for f in files:
-            try:
-              os.unlink(f)
-            except OSError:
-              pass
+      # Clean up if requested
+      if self.cleanup_temp_files:
+        for f in files:
+          try:
+            os.unlink(f)
+          except OSError:
+            pass
 
-        logger.debug(f"Estimated compressed size: {total_size} bytes")
-        return total_size
-
-    except Exception as e:
-      logger.warning(f"Video compression failed ({e}), using fallback")
-      return estimate_compression_size(dataset, self.temp_dir)
+      logger.debug(f"Estimated compressed size: {total_size} bytes")
+      return total_size
 
   def _concatenate_datasets(self, x1: xr.Dataset, x2: xr.Dataset) -> xr.Dataset:
     """
@@ -184,13 +162,8 @@ class XArrayVideoKNNClassifier:
     xr.Dataset
         Combined dataset
     """
-    try:
-      # Combine datasets by concatenating along a new 'concat' dimension
-      combined = xr.concat([x1, x2], dim='concat')
-      return combined
-    except Exception as e:
-      logger.error(f"Failed to concatenate datasets: {e}")
-      raise
+    # TODO(alxmrs): Consider more advanced ways of joining datasets...
+    return xr.concat([x1, x2], dim='concat')
 
   def _normalized_compression_distance(self, x1: xr.Dataset, x2: xr.Dataset) -> float:
     """
@@ -230,15 +203,15 @@ class XArrayVideoKNNClassifier:
 
     return ncd
 
-  def fit(self, X: List[xr.Dataset], y: List[Any]) -> 'XArrayVideoKNNClassifier':
+  def fit(self, X: list[xr.Dataset], y: list[Any]) -> 'XArrayVideoKNNClassifier':
     """
     Fit the classifier with training data.
 
     Parameters
     ----------
-    X : List[xr.Dataset]
+    X : list[xr.Dataset]
         Training datasets
-    y : List[Any]
+    y : list[Any]
         Training labels
 
     Returns
@@ -266,8 +239,8 @@ class XArrayVideoKNNClassifier:
     self.training_labels_ = y.copy()
     self.is_fitted_ = True
 
-    logger.info(f"Fitted classifier with {len(X)} training samples, "
-                f"{len(set(y))} unique classes")
+    logger.debug(f"Fitted classifier with {len(X)} training samples, "
+                 f"{len(set(y))} unique classes")
 
     return self
 
@@ -323,18 +296,18 @@ class XArrayVideoKNNClassifier:
       logger.debug(f"Voting result: {dict(label_counts)}")
       return predicted_label
 
-  def predict(self, X: List[xr.Dataset]) -> List[Any]:
+  def predict(self, X: list[xr.Dataset]) -> list[Any]:
     """
     Predict classes for multiple datasets.
 
     Parameters
     ----------
-    X : List[xr.Dataset]
+    X : list[xr.Dataset]
         Datasets to classify
 
     Returns
     -------
-    List[Any]
+    list[Any]
         Predicted class labels
     """
     if not self.is_fitted_:
@@ -356,7 +329,7 @@ class XArrayVideoKNNClassifier:
 
     return predictions
 
-  def get_params(self) -> Dict:
+  def get_params(self) -> dict:
     """Get classifier parameters."""
     return {
       'k': self.k,

@@ -1940,6 +1940,25 @@ wheels = [
 ]
 
 [[package]]
+name = "xarray-video-knn"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "xarrayvideo" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "xarrayvideo", git = "https://github.com/OscarPellicer/xarrayvideo" }]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=8.4.1" }]
+
+[[package]]
 name = "xarrayvideo"
 version = "0.1.0"
 source = { git = "https://github.com/OscarPellicer/xarrayvideo#a04d4c2a78f1a29b3dc6f48fc8a38cc222cd4afa" }
@@ -1961,25 +1980,6 @@ dependencies = [
     { name = "xarray" },
     { name = "zarr" },
 ]
-
-[[package]]
-name = "xvideo-knn"
-version = "0.1.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "xarrayvideo" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "xarrayvideo", git = "https://github.com/OscarPellicer/xarrayvideo" }]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=8.4.1" }]
 
 [[package]]
 name = "yarl"
