@@ -54,7 +54,7 @@ class XArrayVideoKNNClassifier:
       k: int = 3,
       compression_params: Optional[dict] = None,
       temp_dir: Optional[str] = None,
-      use_lossless: bool = True,
+      use_lossless: bool = False,
       cleanup_temp_files: bool = True
   ):
     self.k = k

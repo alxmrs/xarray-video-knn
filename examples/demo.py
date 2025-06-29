@@ -12,12 +12,16 @@ Requirements:
   - Windows: download from https://ffmpeg.org/
 """
 
+import os
 import shutil
 import sys
 
 import numpy as np
 import xarray as xr
 from sklearn.metrics import accuracy_score, classification_report
+
+# Add project root to Python path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from xarray_video_knn import XArrayVideoKNNClassifier
 
@@ -164,8 +168,8 @@ def main():
     # Create classifier with optimized defaults
     print("Creating XArrayVideoKNNClassifier...")
     classifier = XArrayVideoKNNClassifier(
-        # Using optimized defaults: k=3, use_lossless=True
-        cleanup_temp_files=True
+        use_lossless=False,
+        cleanup_temp_files=True,
     )
     
     # Fit the classifier

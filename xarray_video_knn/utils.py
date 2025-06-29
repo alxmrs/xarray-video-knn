@@ -42,14 +42,15 @@ def create_conversion_rules(
       dims = ['time'] + [d for d in dims if d != 'time']
 
     # Determine bit depth based on data type
+    # Use 8-bit to avoid unsupported pixel formats like bgr016le
     if var.dtype == np.uint8:
       bit_depth = 8
     elif var.dtype == np.uint16:
-      bit_depth = 16
+      bit_depth = 8  # Convert to 8-bit for better compatibility
     elif var.dtype in [np.float32, np.float64]:
-      bit_depth = 16  # Convert floats to 16-bit
+      bit_depth = 8  # Convert floats to 8-bit for better compatibility
     else:
-      bit_depth = 16  # Default
+      bit_depth = 8  # Default to 8-bit
 
     conversion_rules[var_name] = (
       (var_name,),  # variables to include
