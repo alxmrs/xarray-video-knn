@@ -51,7 +51,7 @@ class XArrayVideoKNNClassifier:
 
   def __init__(
       self,
-      k: int = 1,
+      k: int = 3,
       compression_params: Optional[dict] = None,
       temp_dir: Optional[str] = None,
       use_lossless: bool = True,
@@ -62,15 +62,28 @@ class XArrayVideoKNNClassifier:
     self.use_lossless = use_lossless
     self.cleanup_temp_files = cleanup_temp_files
 
-    # Set compression parameters
+    # Set compression parameters based on video compression best practices
     if compression_params is None:
-      self.compression_params = {'c:v': 'ffv1'} if use_lossless else {
-        'c:v': 'libx265',
-        'preset': 'medium',
-        'crf': 51,
-        'x265-params': 'qpmin=0:qpmax=0.01',
-        'tune': 'psnr',
-      }
+      if use_lossless:
+        # FFV1 with optimal settings for multidimensional data
+        self.compression_params = {
+          'c:v': 'ffv1',
+          'level': '3',  # FFV1 version 3 for better compression
+          'slices': '4',  # Parallel processing
+          'slicecrc': '1',  # Error detection
+          'context': '1'   # Better compression for structured data
+        }
+      else:
+        # Optimized lossy compression preserving classification-relevant features
+        # Use libx264 for better compatibility with floating-point data
+        self.compression_params = {
+          'c:v': 'libx264',
+          'preset': 'veryslow',  # Better compression efficiency
+          'crf': '23',  # High quality (was 51, way too high)
+          'tune': 'psnr',  # Optimize for signal fidelity
+          'profile:v': 'high',  # Support for advanced features
+          'level': '4.1'  # Compatibility level
+        }
     else:
       self.compression_params = compression_params
 
@@ -123,7 +136,7 @@ class XArrayVideoKNNClassifier:
       conversion_rules,
       output_path=output_path,
       compute_stats=True,
-      loglevel='error'  # Reduce verbosity
+      verbose=False,  # This turns off plotting!
     )
 
     # Extract compression size
@@ -151,6 +164,11 @@ class XArrayVideoKNNClassifier:
   def _concatenate_datasets(self, x1: xr.Dataset, x2: xr.Dataset) -> xr.Dataset:
     """
     Concatenate two xarray Datasets for joint compression analysis.
+    
+    Uses video compression principles to optimize concatenation strategy:
+    - Temporal concatenation preserves motion patterns
+    - Spatial interleaving can reveal structural similarities
+    - Choose strategy based on data characteristics
 
     Parameters
     ----------
@@ -160,10 +178,31 @@ class XArrayVideoKNNClassifier:
     Returns
     -------
     xr.Dataset
-        Combined dataset
+        Combined dataset optimized for compression analysis
     """
-    # TODO(alxmrs): Consider more advanced ways of joining datasets...
-    return xr.concat([x1, x2], dim='concat')
+    # Strategy 1: Temporal concatenation for time-series data
+    if 'time' in x1.dims and 'time' in x2.dims:
+      # Extend temporal sequence for better motion compression
+      return xr.concat([x1, x2], dim='time')
+    
+    # Strategy 2: Spatial interleaving for spatial data
+    elif self._has_spatial_dims(x1) and self._has_spatial_dims(x2):
+      # Create synthetic time dimension for spatial interleaving
+      # This helps video codecs detect spatial patterns between datasets
+      x1_expanded = x1.expand_dims('time_synthetic').assign_coords(time_synthetic=[0])
+      x2_expanded = x2.expand_dims('time_synthetic').assign_coords(time_synthetic=[1])
+      return xr.concat([x1_expanded, x2_expanded], dim='time_synthetic')
+    
+    # Strategy 3: Fallback to simple concatenation
+    else:
+      return xr.concat([x1, x2], dim='concat')
+      
+  def _has_spatial_dims(self, dataset: xr.Dataset) -> bool:
+    """
+    Check if dataset has spatial-like dimensions that benefit from interleaving.
+    """
+    spatial_indicators = ['x', 'y', 'lat', 'lon', 'latitude', 'longitude']
+    return any(dim in dataset.dims for dim in spatial_indicators)
 
   def _normalized_compression_distance(self, x1: xr.Dataset, x2: xr.Dataset) -> float:
     """

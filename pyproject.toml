@@ -5,6 +5,7 @@ description = "KNN Classification of Xarray data using Video Compression"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "torchmetrics>=1.7.3",
     "xarrayvideo",
 ]
 
