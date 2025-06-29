@@ -2,21 +2,16 @@
 Tests for XArray Video KNN Classifier.
 """
 
-import pytest
+from unittest.mock import patch
+
 import numpy as np
+import pytest
 import xarray as xr
-import tempfile
-import os
-from unittest.mock import patch, MagicMock
 
 from xarray_video_knn import XArrayVideoKNNClassifier
 # Assuming the library is installed or in path
 from xarray_video_knn.utils import (
-  create_conversion_rules,
-  estimate_compression_size,
-  validate_datasets_compatible,
-  get_dataset_info,
-  memory_usage_mb
+  create_conversion_rules
 )
 
 
