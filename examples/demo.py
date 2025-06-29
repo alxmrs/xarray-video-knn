@@ -171,7 +171,7 @@ def main():
         use_lossless=False,
         cleanup_temp_files=True,
     )
-    
+
     # Fit the classifier
     print("Fitting classifier on training data...")
     classifier.fit(X_train, y_train)

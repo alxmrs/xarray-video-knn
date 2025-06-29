@@ -55,12 +55,14 @@ class XArrayVideoKNNClassifier:
       compression_params: Optional[dict] = None,
       temp_dir: Optional[str] = None,
       use_lossless: bool = False,
-      cleanup_temp_files: bool = True
+      cleanup_temp_files: bool = True,
+      verbose=False,
   ):
     self.k = k
     self.temp_dir = temp_dir or tempfile.gettempdir()
     self.use_lossless = use_lossless
     self.cleanup_temp_files = cleanup_temp_files
+    self.verbose = verbose
 
     # Set compression parameters based on video compression best practices
     if compression_params is None:
@@ -75,14 +77,14 @@ class XArrayVideoKNNClassifier:
         }
       else:
         # Optimized lossy compression preserving classification-relevant features
-        # Use libx264 for better compatibility with floating-point data
+        # Use libx264 with high444 profile for 4:4:4 chroma subsampling support
         self.compression_params = {
           'c:v': 'libx264',
           'preset': 'veryslow',  # Better compression efficiency
-          'crf': '23',  # High quality (was 51, way too high)
+          'crf': '18',  # Very high quality for classification accuracy
           'tune': 'psnr',  # Optimize for signal fidelity
-          'profile:v': 'high',  # Support for advanced features
-          'level': '4.1'  # Compatibility level
+          'profile:v': 'high444',  # Support for 4:4:4 chroma subsampling
+          'pix_fmt': 'yuv444p'  # 4:4:4 pixel format for floating-point data
         }
     else:
       self.compression_params = compression_params
@@ -135,7 +137,8 @@ class XArrayVideoKNNClassifier:
       array_id,
       conversion_rules,
       output_path=output_path,
-      compute_stats=True,
+      compute_stats=False,  # Disable metrics computation to avoid torchmetrics errors
+      loglevel='quiet' if not self.verbose else 'debug',
       verbose=False,  # This turns off plotting!
     )
 
